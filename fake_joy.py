@@ -1,3 +1,4 @@
+import argparse
 import os
 import signal
 import stat
@@ -40,13 +41,14 @@ button_map = {
   'p' : (2, 3, -1),
 
   'w' : (2, 4, 1),
-  'e' : (2, 4, -1)
+  'e' : (2, 4, -1),
+  'l' : (2, 5, 1),
+  'k' : (2, 5, -1)
 }
 
 button_state = dict(zip(button_map.keys(), [False] * len(button_map.keys())))
 
 MAX_AXIS_VALUE = 2 ** 15 - 1
-JS_FILE_NAME = "/dev/input/js0"
 
 def read_loop(out_file):
   while 1:
@@ -74,7 +76,11 @@ def read_loop(out_file):
       print("Invalid key.\r")
 
 if __name__ == "__main__":
-  os.mkfifo(JS_FILE_NAME, 0o664 | stat.S_IFIFO)
+  parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  parser.add_argument("--device", type=str, default="/dev/input/js0", nargs='?', help="Filename where joystick pipe is opened")
+  args = parser.parse_args()
+
+  os.mkfifo(args.device, 0o664 | stat.S_IFIFO)
 
   fd = sys.stdin.fileno()
   old_settings = termios.tcgetattr(fd)
@@ -82,9 +88,9 @@ if __name__ == "__main__":
   signals = [signal.SIGINT, signal.SIGTERM]
   for sig in signals:
     signal.signal(sig,
-           lambda x, y, fd=fd, old_settings=old_settings, joy_file=JS_FILE_NAME: cleanup(fd, old_settings, joy_file))
+           lambda x, y, fd=fd, old_settings=old_settings, joy_file=args.device: cleanup(fd, old_settings, joy_file))
 
-  out_file = os.open(JS_FILE_NAME, os.O_WRONLY)
+  out_file = os.open(args.device, os.O_WRONLY)
   tty.setraw(fd)
 
   try:
@@ -92,4 +98,4 @@ if __name__ == "__main__":
   except Exception as e:
     traceback.print_exc()
 
-  cleanup(fd, old_settings, JS_FILE_NAME)
+  cleanup(fd, old_settings, args.device)

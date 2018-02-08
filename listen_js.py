@@ -1,9 +1,14 @@
+import argparse
 import select
 import struct
 import time
 
 if __name__ == "__main__":
-  f = open("/dev/input/js0", 'rb')
+  parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  parser.add_argument("--device", type=str, default="/dev/input/js0", nargs='?', help="Filename of joystick pipe to listen to")
+  args = parser.parse_args()
+
+  f = open(args.device, 'rb')
 
   in_press = False
   char_seq = b''
